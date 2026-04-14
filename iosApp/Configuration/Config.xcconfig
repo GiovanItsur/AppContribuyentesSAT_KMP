@@ -1,0 +1,7 @@
+TEAM_ID=
+
+PRODUCT_NAME=appcontribuyentessat_kmp_sqldelight
+PRODUCT_BUNDLE_IDENTIFIER=com.example.appcontribuyentessat_kmp_sqldelight.appcontribuyentessat_kmp_sqldelight$(TEAM_ID)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0
