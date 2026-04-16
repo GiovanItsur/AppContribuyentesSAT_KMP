@@ -32,4 +32,5 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
     fun seleccionarEstado(id: Long) {
         _estadoSeleccionadoId.value = id
     }
+
 }

@@ -8,4 +8,5 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "SAT Desktop") {
         App(driverFactory = DatabaseDriverFactory())
     }
+
 }

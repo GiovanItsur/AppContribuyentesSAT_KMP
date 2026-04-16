@@ -92,6 +92,7 @@ fun FormularioScreen(viewModel: ContribuyenteViewModel) {
                     )
                 }
             }
+
         }
     }
 }

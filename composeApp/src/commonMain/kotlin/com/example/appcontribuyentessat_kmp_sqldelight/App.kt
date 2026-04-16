@@ -21,6 +21,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
         NavHost(navController = navController, startDestination = "formulario") {
             composable("formulario") {
                 FormularioScreen(viewModel)
+
             }
         }
     }
