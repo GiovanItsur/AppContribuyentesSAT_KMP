@@ -18,7 +18,7 @@ kotlin {
 
     }
 
-    listOf(
+    /*listOf(
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -26,7 +26,7 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
-    }
+    }*/
 
     jvm()
 
@@ -47,6 +47,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation("app.cash.sqldelight:android-driver:2.0.2")
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.7.0-alpha07")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -55,8 +56,11 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+            //implementation(libs.androidx.lifecycle.viewmodelCompose)
+            //implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
             implementation("app.cash.sqldelight:coroutines-extensions:2.3.2")
             implementation("app.cash.sqldelight:primitive-adapters:2.0.2")
         }

@@ -1,51 +1,26 @@
 package com.example.appcontribuyentessat_kmp_sqldelight
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
-
-import appcontribuyentessat_kmp_sqldelight.composeapp.generated.resources.Res
-import appcontribuyentessat_kmp_sqldelight.composeapp.generated.resources.compose_multiplatform
-import com.example.appcontribuyentessat_kmp_sqldelight.database.SatDatabase
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.appcontribuyentessat_kmp_sqldelight.database.DatabaseDriverFactory
+import com.example.appcontribuyentessat_kmp_sqldelight.database.createDatabase
 
 @Composable
-@Preview
-fun App() {
-    
-
+fun App(driverFactory: DatabaseDriverFactory) {
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
+        val database = remember { createDatabase(driverFactory) }
+
+        val viewModel = remember { ContribuyenteViewModel(database) }
+
+        val navController = rememberNavController()
+
+        NavHost(navController = navController, startDestination = "formulario") {
+            composable("formulario") {
+                FormularioScreen(viewModel)
             }
         }
     }
