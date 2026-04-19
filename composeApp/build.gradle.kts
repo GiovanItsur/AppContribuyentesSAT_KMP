@@ -60,7 +60,6 @@ kotlin {
             //implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
             implementation("app.cash.sqldelight:coroutines-extensions:2.3.2")
             implementation("app.cash.sqldelight:primitive-adapters:2.0.2")
         }

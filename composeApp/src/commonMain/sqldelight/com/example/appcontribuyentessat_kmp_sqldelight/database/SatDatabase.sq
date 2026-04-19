@@ -1,0 +1,222 @@
+-- Esta tablita es para los estados :)
+
+CREATE TABLE ESTADOS(
+
+Id_Estado INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+
+Nombre_Estado TEXT NOT NULL
+
+);
+
+
+
+-- Esta otra es para los municipios UwU
+
+CREATE TABLE MUNICIPIOS(
+
+Id_Municipio INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+
+Nombre_Municipio TEXT NOT NULL,
+
+Id_Estado INTEGER NOT NULL,
+
+FOREIGN KEY (Id_Estado) REFERENCES ESTADOS (Id_Estado)
+
+);
+
+
+
+-- Tabla para las personas fisicas
+
+CREATE TABLE PERSONAS_FISICAS(
+
+CURP TEXT NOT NULL PRIMARY KEY CHECK (length (CURP) = 18),
+
+Nombre TEXT NOT NULL,
+
+Apellido TEXT NOT NULL,
+
+Fecha_Nacimiento TEXT NOT NULL,
+
+Correo TEXT NOT NULL,
+
+Telefono TEXT NOT NULL CHECK (length (Telefono) = 10),
+
+Codigo_Postal TEXT NOT NULL,
+
+Tipo_Vialidad TEXT NOT NULL,
+
+Actividad_Economica TEXT NOT NULL,
+
+Regimen_Fiscal TEXT NOT NULL
+
+);
+
+
+
+-- Tabla para las personas morales
+
+CREATE TABLE PERSONAS_MORALES(
+
+RFC TEXT NOT NULL PRIMARY KEY,
+
+Denominacion_Social TEXT NOT NULL,
+
+Fecha_Constitucion TEXT NOT NULL,
+
+RFC_Representante TEXT NOT NULL,
+
+Num_Escritura TEXT NOT NULL,
+
+Regimen_Capital TEXT NOT NULL,
+
+Actividad_Economica TEXT NOT NULL
+
+);
+
+
+
+CREATE TABLE DomicilioFiscal (
+
+Id_DomicilioFiscal INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+
+id_propietario TEXT NOT NULL,
+
+codigoPostal TEXT NOT NULL,
+
+colonia TEXT NOT NULL,
+
+tipoVialidad TEXT NOT NULL,
+
+nombreVialidad TEXT NOT NULL,
+
+numExterior TEXT NOT NULL,
+
+numInterior TEXT,
+
+entreCalle1 TEXT,
+
+entreCalle2 TEXT,
+
+referenciaAdicional TEXT,
+
+caracteristicasInmueble TEXT,
+
+Id_Estado INTEGER NOT NULL,
+
+Id_Municipio INTEGER NOT NULL,
+
+FOREIGN KEY (Id_Estado) REFERENCES ESTADOS (Id_Estado),
+
+FOREIGN KEY (Id_Municipio) REFERENCES MUNICIPIOS (Id_Municipio)
+
+);
+
+
+
+-- Estas de aca abajo van a ser para las consultas a la dbd
+
+
+
+obtenerEstados:
+
+SELECT * FROM ESTADOS ORDER BY Nombre_Estado ASC;
+
+
+
+-- Aqui voy a hacer un filtro de municipios por estado
+
+obtenerMunicipiosPorEstado:
+
+SELECT * FROM MUNICIPIOS WHERE Id_Estado = ? ORDER BY Nombre_Municipio ASC;
+
+
+
+insertarPersonaFisica:
+
+INSERT OR REPLACE INTO PERSONAS_FISICAS VALUES ?;
+
+
+
+listarPersonasFisicas:
+
+SELECT * FROM PERSONAS_FISICAS;
+
+
+
+borrarPersonaFisica:
+
+DELETE FROM PERSONAS_FISICAS WHERE CURP = ?;
+
+
+
+insertarPersonaMoral:
+
+INSERT OR REPLACE INTO PERSONAS_MORALES VALUES ?;
+
+
+
+listarPersonasMorales:
+
+SELECT * FROM PERSONAS_MORALES;
+
+
+
+borrarPersonaMoral:
+
+DELETE FROM PERSONAS_MORALES WHERE RFC = ?;
+
+
+
+insertarDomicilioFiscal:
+
+INSERT OR REPLACE INTO DomicilioFiscal VALUES ?;
+
+
+
+obtenerDomicilioPorContribuyentes:
+
+SELECT * FROM DomicilioFiscal WHERE id_propietario = ?;
+
+
+
+obtenerPersonaFisicaPorCURP:
+
+SELECT * FROM PERSONAS_FISICAS WHERE CURP = ?;
+
+
+
+obtenerPersonaMoralPorRFC:
+
+SELECT * FROM PERSONAS_MORALES WHERE RFC = ?;
+
+
+
+contarPersonasFisicas:
+
+SELECT COUNT(*) FROM PERSONAS_FISICAS;
+
+
+
+contarPersonasMorales:
+
+SELECT COUNT(*) FROM PERSONAS_MORALES;
+
+insertarEstado:
+INSERT INTO ESTADOS (Id_Estado, Nombre_Estado)
+VALUES (?, ?);
+
+insertarMunicipio:
+INSERT INTO MUNICIPIOS (Id_Municipio, Id_Estado, Nombre_Municipio)
+VALUES (?, ?, ?);
+
+contarEstados:
+SELECT count(*) FROM ESTADOS;
+
+insertarPersonaFisicaReal:
+INSERT INTO PERSONAS_FISICAS (CURP, Nombre, Apellido, Fecha_Nacimiento, Correo, Telefono, Codigo_Postal, Tipo_Vialidad, Actividad_Economica, Regimen_Fiscal)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertarDomicilioReal:
+INSERT INTO DomicilioFiscal (id_propietario, codigoPostal, colonia, tipoVialidad, nombreVialidad, numExterior, Id_Estado, Id_Municipio)
+VALUES (?, ?, 'No especificada', ?, 'No especificada', 'SN', ?, ?);
