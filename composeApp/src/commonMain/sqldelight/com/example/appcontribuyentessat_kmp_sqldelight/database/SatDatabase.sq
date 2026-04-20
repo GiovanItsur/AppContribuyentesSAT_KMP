@@ -220,3 +220,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 insertarDomicilioReal:
 INSERT INTO DomicilioFiscal (id_propietario, codigoPostal, colonia, tipoVialidad, nombreVialidad, numExterior, Id_Estado, Id_Municipio)
 VALUES (?, ?, 'No especificada', ?, 'No especificada', 'SN', ?, ?);
+
+actualizarPersonaFisica:
+UPDATE PERSONAS_FISICAS
+SET Nombre = ?, Apellido = ?, Fecha_Nacimiento = ?, Correo = ?, Telefono = ?, Codigo_Postal = ?, Tipo_Vialidad = ?, Actividad_Economica = ?, Regimen_Fiscal = ?
+WHERE CURP = ?;
