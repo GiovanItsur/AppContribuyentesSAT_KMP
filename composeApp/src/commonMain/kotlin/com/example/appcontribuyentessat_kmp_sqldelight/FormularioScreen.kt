@@ -14,17 +14,36 @@ import com.example.appcontribuyentessatkmpsqldelight.database.MUNICIPIOS
 @Composable
 fun FormularioScreen(
     viewModel: ContribuyenteViewModel,
-    onNavigateToList: () -> Unit // Función puente para regresar a la lista
+    onNavigateToList: () -> Unit
 ) {
     // ========================================================================
-    // 1. RECOLECCIÓN DE DATOS DEL VIEWMODEL (REACTIVIDAD)
+    // 1. RECOLECCIÓN DE ESTADOS (LO QUE VAMOS A DIBUJAR)
     // ========================================================================
-    // 'collectAsState()' hace que la pantalla se redibuje sola si el ViewModel cambia
+
+    // Switch de Pestañas
+    val esFisica by viewModel.esPersonaFisica.collectAsState()
+
+    // Bandera para saber si el título dice "Crear" o "Editar"
+    val modoEdicionFisica by viewModel.curpEnEdicion.collectAsState()
+    val modoEdicionMoral by viewModel.rfcEnEdicion.collectAsState()
+
+    // Datos de Persona Física
     val curp by viewModel.curp.collectAsState()
     val nombre by viewModel.nombre.collectAsState()
     val paterno by viewModel.apellidoPaterno.collectAsState()
     val materno by viewModel.apellidoMaterno.collectAsState()
     val fecha by viewModel.fechaNacimiento.collectAsState()
+    val rfcGenerado by viewModel.rfcGenerado.collectAsState()
+
+    // Datos de Persona Moral
+    val rfcMoral by viewModel.rfcMoral.collectAsState()
+    val denominacion by viewModel.denominacionSocial.collectAsState()
+    val fechaConst by viewModel.fechaConstitucion.collectAsState()
+    val rfcRep by viewModel.rfcRepresentante.collectAsState()
+    val escritura by viewModel.numEscritura.collectAsState()
+    val capital by viewModel.regimenCapital.collectAsState()
+
+    // Datos Compartidos (Contacto y Domicilio)
     val correo by viewModel.correo.collectAsState()
     val telefono by viewModel.telefono.collectAsState()
     val cp by viewModel.codigoPostal.collectAsState()
@@ -32,122 +51,90 @@ fun FormularioScreen(
     val actividad by viewModel.actividadEconomica.collectAsState()
     val regimen by viewModel.regimenFiscal.collectAsState()
 
-    val rfc by viewModel.rfcGenerado.collectAsState()
-    val modoEdicion by viewModel.curpEnEdicion.collectAsState()
-
-    // Catálogos para los menús
+    // Catálogos
     val estados by viewModel.estados.collectAsState()
     val municipios by viewModel.municipios.collectAsState()
 
-    // ========================================================================
-    // 2. ESTADOS LOCALES (SOLO PARA LA INTERFAZ VISUAL)
-    // ========================================================================
-    // 'remember' guarda estos datos temporales mientras la pantalla está abierta
+    // Control local para los menús desplegables
     var estadoExpanded by remember { mutableStateOf(false) }
     var estadoSeleccionado by remember { mutableStateOf<ESTADOS?>(null) }
-
     var municipioExpanded by remember { mutableStateOf(false) }
     var municipioSeleccionado by remember { mutableStateOf<MUNICIPIOS?>(null) }
 
 
     // ========================================================================
-    // 3. DISEÑO DE LA PANTALLA (UI)
+    // 2. DISEÑO PRINCIPAL DE LA PANTALLA
     // ========================================================================
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()) // Permite deslizar hacia abajo
+        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())
     ) {
-        // Título dinámico
+        // --- TÍTULO DINÁMICO ---
         Text(
-            text = if (modoEdicion != null) "Editar Contribuyente" else "Registro de Contribuyente",
+            text = if (modoEdicionFisica != null || modoEdicionMoral != null) "Editar Contribuyente" else "Registro de Contribuyente",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // --- SECCIÓN A: DATOS PERSONALES ---
-        OutlinedTextField(
-            value = curp, onValueChange = { viewModel.actualizarCurp(it) },
-            label = { Text("CURP (18 caracteres)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = nombre, onValueChange = { viewModel.actualizarNombre(it) },
-            label = { Text("Nombre(s)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = paterno, onValueChange = { viewModel.actualizarPaterno(it) },
-            label = { Text("Apellido Paterno") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = materno, onValueChange = { viewModel.actualizarMaterno(it) },
-            label = { Text("Apellido Materno") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = fecha, onValueChange = { viewModel.actualizarFecha(it) },
-            label = { Text("Fecha de Nacimiento (AAMMDD)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // --- SECCIÓN B: CONTACTO Y DOMICILIO ---
-        OutlinedTextField(
-            value = correo, onValueChange = { viewModel.actualizarCorreo(it) },
-            label = { Text("Correo Electrónico") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = telefono, onValueChange = { viewModel.actualizarTelefono(it) },
-            label = { Text("Teléfono (10 dígitos)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = cp, onValueChange = { viewModel.actualizarCP(it) },
-            label = { Text("Código Postal") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = vialidad, onValueChange = { viewModel.actualizarVialidad(it) },
-            label = { Text("Tipo de Vialidad (Ej. Calle, Avenida)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // --- SECCIÓN C: FISCAL ---
-        OutlinedTextField(
-            value = actividad, onValueChange = { viewModel.actualizarActividad(it) },
-            label = { Text("Actividad Económica") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = regimen, onValueChange = { viewModel.actualizarRegimen(it) },
-            label = { Text("Régimen Fiscal") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // --- SECCIÓN D: RFC CALCULADO AUTOMÁTICAMENTE ---
-        OutlinedTextField(
-            value = rfc,
-            onValueChange = {},
-            readOnly = true, // El usuario no puede editar esto manualmente
-            label = { Text("RFC Calculado Automáticamente") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        // --- PESTAÑAS (FÍSICA / MORAL) ---
+        TabRow(selectedTabIndex = if (esFisica) 0 else 1) {
+            Tab(
+                selected = esFisica,
+                onClick = { viewModel.cambiarTipoPersona(true) },
+                text = { Text("Persona Física") }
             )
-        )
+            Tab(
+                selected = !esFisica,
+                onClick = { viewModel.cambiarTipoPersona(false) },
+                text = { Text("Persona Moral") }
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+
+        // ========================================================================
+        // 3. FORMULARIOS DINÁMICOS (CAMBIAN SEGÚN LA PESTAÑA)
+        // ========================================================================
+        if (esFisica) {
+            // ---> MODO: PERSONA FÍSICA <---
+            OutlinedTextField(value = curp, onValueChange = { viewModel.actualizarCurp(it) }, label = { Text("CURP (18 caracteres)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = nombre, onValueChange = { viewModel.actualizarNombre(it) }, label = { Text("Nombre(s)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = paterno, onValueChange = { viewModel.actualizarPaterno(it) }, label = { Text("Apellido Paterno") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = materno, onValueChange = { viewModel.actualizarMaterno(it) }, label = { Text("Apellido Materno") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = fecha, onValueChange = { viewModel.actualizarFecha(it) }, label = { Text("Fecha de Nacimiento (AAMMDD)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = correo, onValueChange = { viewModel.actualizarCorreo(it) }, label = { Text("Correo Electrónico") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = telefono, onValueChange = { viewModel.actualizarTelefono(it) }, label = { Text("Teléfono (10 dígitos)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = regimen, onValueChange = { viewModel.actualizarRegimen(it) }, label = { Text("Régimen Fiscal") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+
+            // RFC Autocalculado
+            OutlinedTextField(value = rfcGenerado, onValueChange = {}, readOnly = true, label = { Text("RFC Calculado Automáticamente") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant))
+
+        } else {
+            // ---> MODO: PERSONA MORAL <---
+            OutlinedTextField(value = rfcMoral, onValueChange = { viewModel.actualizarRfcMoral(it) }, label = { Text("RFC de la Empresa") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = denominacion, onValueChange = { viewModel.actualizarDenominacion(it) }, label = { Text("Denominación Social (Nombre)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = fechaConst, onValueChange = { viewModel.actualizarFechaConstitucion(it) }, label = { Text("Fecha de Constitución") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = rfcRep, onValueChange = { viewModel.actualizarRfcRepresentante(it) }, label = { Text("RFC del Representante Legal") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = escritura, onValueChange = { viewModel.actualizarNumEscritura(it) }, label = { Text("Número de Escritura") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = capital, onValueChange = { viewModel.actualizarRegimenCapital(it) }, label = { Text("Régimen de Capital (Ej. S.A. de C.V.)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
         Divider()
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // --- SECCIÓN E: UBICACIÓN (CATÁLOGOS) ---
-        // Menú de Estados
+
+        // ========================================================================
+        // 4. DATOS COMPARTIDOS Y DOMICILIO
+        // ========================================================================
+        Text("Datos Generales y Domicilio", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = actividad, onValueChange = { viewModel.actualizarActividad(it) }, label = { Text("Actividad Económica Principal") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(value = cp, onValueChange = { viewModel.actualizarCP(it) }, label = { Text("Código Postal") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(value = vialidad, onValueChange = { viewModel.actualizarVialidad(it) }, label = { Text("Tipo de Vialidad (Ej. Calle, Avenida)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- MENÚ DESPLEGABLE: ESTADOS ---
         ExposedDropdownMenuBox(
             expanded = estadoExpanded,
             onExpandedChange = { estadoExpanded = it }
@@ -166,7 +153,7 @@ fun FormularioScreen(
                         text = { Text(estado.Nombre_Estado) },
                         onClick = {
                             estadoSeleccionado = estado
-                            viewModel.seleccionarEstado(estado.Id_Estado) // Detona la carga de municipios
+                            viewModel.seleccionarEstado(estado.Id_Estado) // Detona la búsqueda de municipios
                             municipioSeleccionado = null
                             estadoExpanded = false
                         }
@@ -174,10 +161,9 @@ fun FormularioScreen(
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Menú de Municipios
+        // --- MENÚ DESPLEGABLE: MUNICIPIOS ---
         ExposedDropdownMenuBox(
             expanded = municipioExpanded,
             onExpandedChange = { if (estadoSeleccionado != null) municipioExpanded = it }
@@ -185,7 +171,7 @@ fun FormularioScreen(
             OutlinedTextField(
                 value = municipioSeleccionado?.Nombre_Municipio ?: "Selecciona un Municipio",
                 onValueChange = {}, readOnly = true, label = { Text("Municipio") },
-                enabled = estadoSeleccionado != null, // Protegido: Solo se habilita si hay estado
+                enabled = estadoSeleccionado != null, // Protegido: Solo se abre si ya hay estado
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = municipioExpanded) },
                 modifier = Modifier.menuAnchor().fillMaxWidth()
             )
@@ -203,17 +189,17 @@ fun FormularioScreen(
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(32.dp))
 
+
         // ========================================================================
-        // 4. BOTONES DE ACCIÓN FINAL
+        // 5. BOTONES DE ACCIÓN FINAL
         // ========================================================================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Botón Cancelar
+            // BOTÓN: CANCELAR
             OutlinedButton(
                 onClick = {
                     viewModel.limpiarFormulario()
@@ -224,7 +210,14 @@ fun FormularioScreen(
                 Text("Cancelar")
             }
 
-            // Botón Guardar / Actualizar
+            // Lógica inteligente para habilitar el botón de Guardar
+            val formularioValido = if (esFisica) {
+                curp.length == 18 && telefono.length == 10 && municipioSeleccionado != null
+            } else {
+                rfcMoral.isNotBlank() && municipioSeleccionado != null
+            }
+
+            // BOTÓN: GUARDAR / ACTUALIZAR
             Button(
                 onClick = {
                     if (estadoSeleccionado != null && municipioSeleccionado != null) {
@@ -232,6 +225,7 @@ fun FormularioScreen(
                             idEstado = estadoSeleccionado!!.Id_Estado,
                             idMunicipio = municipioSeleccionado!!.Id_Municipio
                         )
+                        // Limpiamos los menús al terminar
                         estadoExpanded = false
                         municipioExpanded = false
                         estadoSeleccionado = null
@@ -240,10 +234,9 @@ fun FormularioScreen(
                     }
                 },
                 modifier = Modifier.weight(1f),
-                // Regla estricta para habilitar el botón y no crashear la base de datos
-                enabled = curp.length == 18 && telefono.length == 10 && municipioSeleccionado != null
+                enabled = formularioValido // Se bloquea si faltan datos importantes
             ) {
-                Text(if (modoEdicion != null) "Actualizar" else "Guardar")
+                Text(if (modoEdicionFisica != null || modoEdicionMoral != null) "Actualizar" else "Guardar")
             }
         }
     }

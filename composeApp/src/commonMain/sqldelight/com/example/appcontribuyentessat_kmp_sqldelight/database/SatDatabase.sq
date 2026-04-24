@@ -76,44 +76,6 @@ Actividad_Economica TEXT NOT NULL
 
 
 
-CREATE TABLE DomicilioFiscal (
-
-Id_DomicilioFiscal INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-
-id_propietario TEXT NOT NULL,
-
-codigoPostal TEXT NOT NULL,
-
-colonia TEXT NOT NULL,
-
-tipoVialidad TEXT NOT NULL,
-
-nombreVialidad TEXT NOT NULL,
-
-numExterior TEXT NOT NULL,
-
-numInterior TEXT,
-
-entreCalle1 TEXT,
-
-entreCalle2 TEXT,
-
-referenciaAdicional TEXT,
-
-caracteristicasInmueble TEXT,
-
-Id_Estado INTEGER NOT NULL,
-
-Id_Municipio INTEGER NOT NULL,
-
-FOREIGN KEY (Id_Estado) REFERENCES ESTADOS (Id_Estado),
-
-FOREIGN KEY (Id_Municipio) REFERENCES MUNICIPIOS (Id_Municipio)
-
-);
-
-
-
 -- Estas de aca abajo van a ser para las consultas a la dbd
 
 
@@ -168,38 +130,25 @@ DELETE FROM PERSONAS_MORALES WHERE RFC = ?;
 
 
 
-insertarDomicilioFiscal:
-
-INSERT OR REPLACE INTO DomicilioFiscal VALUES ?;
-
-
-
-obtenerDomicilioPorContribuyentes:
-
-SELECT * FROM DomicilioFiscal WHERE id_propietario = ?;
 
 
 
 obtenerPersonaFisicaPorCURP:
-
 SELECT * FROM PERSONAS_FISICAS WHERE CURP = ?;
 
 
 
 obtenerPersonaMoralPorRFC:
-
 SELECT * FROM PERSONAS_MORALES WHERE RFC = ?;
 
 
 
 contarPersonasFisicas:
-
 SELECT COUNT(*) FROM PERSONAS_FISICAS;
 
 
 
 contarPersonasMorales:
-
 SELECT COUNT(*) FROM PERSONAS_MORALES;
 
 insertarEstado:
@@ -217,11 +166,16 @@ insertarPersonaFisicaReal:
 INSERT INTO PERSONAS_FISICAS (CURP, Nombre, Apellido, Fecha_Nacimiento, Correo, Telefono, Codigo_Postal, Tipo_Vialidad, Actividad_Economica, Regimen_Fiscal)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-insertarDomicilioReal:
-INSERT INTO DomicilioFiscal (id_propietario, codigoPostal, colonia, tipoVialidad, nombreVialidad, numExterior, Id_Estado, Id_Municipio)
-VALUES (?, ?, 'No especificada', ?, 'No especificada', 'SN', ?, ?);
-
 actualizarPersonaFisica:
 UPDATE PERSONAS_FISICAS
 SET Nombre = ?, Apellido = ?, Fecha_Nacimiento = ?, Correo = ?, Telefono = ?, Codigo_Postal = ?, Tipo_Vialidad = ?, Actividad_Economica = ?, Regimen_Fiscal = ?
 WHERE CURP = ?;
+
+insertarPersonaMoralReal:
+INSERT INTO PERSONAS_MORALES (RFC, Denominacion_Social, Fecha_Constitucion, RFC_Representante, Num_Escritura, Regimen_Capital, Actividad_Economica)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+actualizarPersonaMoral:
+UPDATE PERSONAS_MORALES
+SET Denominacion_Social = ?, Fecha_Constitucion = ?, RFC_Representante = ?, Num_Escritura = ?, Regimen_Capital = ?, Actividad_Economica = ?
+WHERE RFC = ?;

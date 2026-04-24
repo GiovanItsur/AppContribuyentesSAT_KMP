@@ -6,58 +6,55 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.example.appcontribuyentessat_kmp_sqldelight.database.SatDatabase
 import com.example.appcontribuyentessatkmpsqldelight.database.PERSONAS_FISICAS
+import com.example.appcontribuyentessatkmpsqldelight.database.PERSONAS_MORALES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 
 class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
 
     // ========================================================================
-    // CONEXIÓN A LA BASE DE DATOS
+    // 1. CONFIGURACIÓN INICIAL Y BASE DE DATOS
     // ========================================================================
     private val queries = db.satDatabaseQueries
 
     init {
-        // Al nacer el ViewModel, llenamos la BD con datos de prueba si está vacía
+        // Arrancamos llenando los catálogos si la BD está limpia
         inicializarDatosDePrueba()
     }
 
+
     // ========================================================================
-    // 2. ESTADOS REACTIVOS: CATÁLOGOS (ESTADOS Y MUNICIPIOS)
+    // 2. CONTROL DE PESTAÑAS Y ESTADOS DE EDICIÓN
     // ========================================================================
-    // Lee la tabla ESTADOS y se actualiza solo si hay cambios.
-    val estados = queries.obtenerEstados()
-        .asFlow()
-        .mapToList(Dispatchers.IO)
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Guarda el ID del estado que el usuario seleccionó en la pantalla
-    private val _estadoSeleccionadoId = MutableStateFlow<Long?>(null)
+    // Switch principal: ¿Estamos viendo Físicas (true) o Morales (false)?
+    val esPersonaFisica = MutableStateFlow(true)
 
-    fun seleccionarEstado(id: Long) {
-        _estadoSeleccionadoId.value = id
-    }
-
-    // "Escucha" a _estadoSeleccionadoId. Si cambia, va a la BD y trae sus municipios (Ej. Guanajuato -> Uriangato, Moroleón...)
-    val municipios = _estadoSeleccionadoId.flatMapLatest { idEstado ->
-        if (idEstado == null) {
-            flowOf(emptyList()) // Si no hay estado, devuelve lista vacía
-        } else {
-            queries.obtenerMunicipiosPorEstado(idEstado)
-                .asFlow()
-                .mapToList(Dispatchers.IO)
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    // Banderas de seguridad: Si tienen texto, estamos editando; si son null, es registro nuevo
+    val curpEnEdicion = MutableStateFlow<String?>(null)
+    val rfcEnEdicion = MutableStateFlow<String?>(null)
 
 
     // ========================================================================
-    // 3. ESTADOS REACTIVOS: DATOS DEL FORMULARIO
+    // 3. VARIABLES DEL FORMULARIO (LO QUE EL USUARIO TECLEA)
     // ========================================================================
-    // Estas variables (StateFlows) son el "espejo" de lo que el usuario escribe
+
+    // --- Personas Físicas ---
     val curp = MutableStateFlow("")
     val nombre = MutableStateFlow("")
     val apellidoPaterno = MutableStateFlow("")
     val apellidoMaterno = MutableStateFlow("")
     val fechaNacimiento = MutableStateFlow("")
+
+    // --- Personas Morales ---
+    val rfcMoral = MutableStateFlow("")
+    val denominacionSocial = MutableStateFlow("")
+    val fechaConstitucion = MutableStateFlow("")
+    val rfcRepresentante = MutableStateFlow("")
+    val numEscritura = MutableStateFlow("")
+    val regimenCapital = MutableStateFlow("")
+
+    // --- Datos Compartidos (Contacto y Domicilio) ---
     val correo = MutableStateFlow("")
     val telefono = MutableStateFlow("")
     val codigoPostal = MutableStateFlow("")
@@ -65,12 +62,57 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
     val actividadEconomica = MutableStateFlow("")
     val regimenFiscal = MutableStateFlow("")
 
-    // Funciones que la interfaz llama cada vez que el usuario teclea una letra
+
+    // ========================================================================
+    // 4. DATOS CALCULADOS Y LISTAS REACTIVAS (SOLO LECTURA)
+    // ========================================================================
+
+    // Cálculo instantáneo del RFC usando las variables de la persona física
+    val rfcGenerado = combine(
+        nombre, apellidoPaterno, apellidoMaterno, fechaNacimiento
+    ) { nom, pat, mat, fecha ->
+        if (nom.isEmpty() || pat.isEmpty() || mat.isEmpty() || fecha.length < 6) ""
+        else "${pat.take(2)}${mat.take(1)}${nom.take(1)}${fecha.take(6)}".uppercase()
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "")
+
+    // Listas vivas de la BD que alimentan las tarjetas en la pantalla principal
+    val listaPersonas = queries.listarPersonasFisicas().asFlow().mapToList(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val listaPersonasMorales = queries.listarPersonasMorales().asFlow().mapToList(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Catálogos dinámicos para los menús desplegables
+    val estados = queries.obtenerEstados().asFlow().mapToList(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Escucha al estado seleccionado y trae solo sus municipios correspondientes
+    private val _estadoSeleccionadoId = MutableStateFlow<Long?>(null)
+    val municipios = _estadoSeleccionadoId.flatMapLatest { idEstado ->
+        if (idEstado == null) flowOf(emptyList())
+        else queries.obtenerMunicipiosPorEstado(idEstado).asFlow().mapToList(Dispatchers.IO)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+
+    // ========================================================================
+    // 5. FUNCIONES DE ACTUALIZACIÓN (EL PUENTE CON LA INTERFAZ)
+    // ========================================================================
+
+    fun cambiarTipoPersona(esFisica: Boolean) { esPersonaFisica.value = esFisica }
+    fun seleccionarEstado(id: Long) { _estadoSeleccionadoId.value = id }
+
+    // --- Reglas de Físicas ---
     fun actualizarCurp(nuevo: String) { curp.value = nuevo.take(18).uppercase() }
     fun actualizarNombre(nuevo: String) { nombre.value = nuevo }
     fun actualizarPaterno(nuevo: String) { apellidoPaterno.value = nuevo }
     fun actualizarMaterno(nuevo: String) { apellidoMaterno.value = nuevo }
     fun actualizarFecha(nuevo: String) { fechaNacimiento.value = nuevo }
+
+    // --- Reglas de Morales ---
+    fun actualizarRfcMoral(nuevo: String) { rfcMoral.value = nuevo.take(13).uppercase() }
+    fun actualizarDenominacion(nuevo: String) { denominacionSocial.value = nuevo }
+    fun actualizarFechaConstitucion(nuevo: String) { fechaConstitucion.value = nuevo }
+    fun actualizarRfcRepresentante(nuevo: String) { rfcRepresentante.value = nuevo.take(13).uppercase() }
+    fun actualizarNumEscritura(nuevo: String) { numEscritura.value = nuevo }
+    fun actualizarRegimenCapital(nuevo: String) { regimenCapital.value = nuevo }
+
+    // --- Reglas de Compartidos ---
     fun actualizarCorreo(nuevo: String) { correo.value = nuevo }
     fun actualizarTelefono(nuevo: String) { telefono.value = nuevo.filter { it.isDigit() }.take(10) }
     fun actualizarCP(nuevo: String) { codigoPostal.value = nuevo.filter { it.isDigit() }.take(5) }
@@ -80,83 +122,37 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
 
 
     // ========================================================================
-    // 4. MAGIA REACTIVA: CÁLCULO DE RFC Y LISTADO
+    // 6. OPERACIONES CRUD (CREAR, LEER, ACTUALIZAR, BORRAR)
     // ========================================================================
-    // Observa 4 variables al mismo tiempo. Si alguna cambia, recalcula el RFC al instante.
-    val rfcGenerado = combine(
-        nombre, apellidoPaterno, apellidoMaterno, fechaNacimiento
-    ) { nom, pat, mat, fecha ->
-        if (nom.isEmpty() || pat.isEmpty() || mat.isEmpty() || fecha.length < 6) ""
-        else "${pat.take(2)}${mat.take(1)}${nom.take(1)}${fecha.take(6)}".uppercase()
-    }.stateIn(viewModelScope, SharingStarted.Lazily, "")
-
-    // Escucha la tabla de PERSONAS_FISICAS en tiempo real para pintar la lista
-    val listaPersonas = queries.listarPersonasFisicas()
-        .asFlow()
-        .mapToList(Dispatchers.IO)
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
-
-    // ========================================================================
-    // 5. LÓGICA DE NEGOCIO: CRUD (CREAR, LEER, ACTUALIZAR, BORRAR)
-    // ========================================================================
-
-    // Bandera: Si es NULL, creamos uno nuevo. Si tiene texto, actualizamos ese registro.
-    val curpEnEdicion = MutableStateFlow<String?>(null)
 
     fun guardarContribuyenteReal(idEstado: Long, idMunicipio: Long) {
-        val apellidosJuntos = "${apellidoPaterno.value} ${apellidoMaterno.value}"
-
-        if (curpEnEdicion.value != null) {
-            // UPDATE: Actualizar persona existente
-            queries.actualizarPersonaFisica(
-                Nombre = nombre.value,
-                Apellido = apellidosJuntos,
-                Fecha_Nacimiento = fechaNacimiento.value,
-                Correo = correo.value,
-                Telefono = telefono.value,
-                Codigo_Postal = codigoPostal.value,
-                Tipo_Vialidad = tipoVialidad.value,
-                Actividad_Economica = actividadEconomica.value,
-                Regimen_Fiscal = regimenFiscal.value,
-                CURP = curpEnEdicion.value!!
-            )
+        if (esPersonaFisica.value) {
+            // === RUTA: PERSONA FÍSICA ===
+            val apellidosJuntos = "${apellidoPaterno.value} ${apellidoMaterno.value}"
+            if (curpEnEdicion.value != null) {
+                queries.actualizarPersonaFisica(nombre.value, apellidosJuntos, fechaNacimiento.value, correo.value, telefono.value, codigoPostal.value, tipoVialidad.value, actividadEconomica.value, regimenFiscal.value, curpEnEdicion.value!!)
+            } else {
+                queries.insertarPersonaFisicaReal(curp.value, nombre.value, apellidosJuntos, fechaNacimiento.value, correo.value, telefono.value, codigoPostal.value, tipoVialidad.value, actividadEconomica.value, regimenFiscal.value)
+            }
         } else {
-            // INSERT: Crear persona nueva
-            queries.insertarPersonaFisicaReal(
-                CURP = curp.value,
-                Nombre = nombre.value,
-                Apellido = apellidosJuntos,
-                Fecha_Nacimiento = fechaNacimiento.value,
-                Correo = correo.value,
-                Telefono = telefono.value,
-                Codigo_Postal = codigoPostal.value,
-                Tipo_Vialidad = tipoVialidad.value,
-                Actividad_Economica = actividadEconomica.value,
-                Regimen_Fiscal = regimenFiscal.value
-            )
-            // El domicilio solo se inserta la primera vez
-            queries.insertarDomicilioReal(
-                id_propietario = curp.value,
-                codigoPostal = codigoPostal.value,
-                tipoVialidad = tipoVialidad.value,
-                Id_Estado = idEstado,
-                Id_Municipio = idMunicipio
-            )
+            // === RUTA: PERSONA MORAL ===
+            if (rfcEnEdicion.value != null) {
+                queries.actualizarPersonaMoral(denominacionSocial.value, fechaConstitucion.value, rfcRepresentante.value, numEscritura.value, regimenCapital.value, actividadEconomica.value, rfcEnEdicion.value!!)
+            } else {
+                queries.insertarPersonaMoralReal(rfcMoral.value, denominacionSocial.value, fechaConstitucion.value, rfcRepresentante.value, numEscritura.value, regimenCapital.value, actividadEconomica.value)
+            }
         }
         limpiarFormulario()
     }
 
-    fun borrarPersona(curpParaBorrar: String) {
-        queries.borrarPersonaFisica(curpParaBorrar)
-    }
-
+    // Funciones para inyectar datos de la BD hacia la pantalla cuando queremos editar
     fun cargarPersonaParaEditar(persona: PERSONAS_FISICAS) {
+        esPersonaFisica.value = true
         curpEnEdicion.value = persona.CURP
+
         curp.value = persona.CURP
         nombre.value = persona.Nombre
 
-        // Separamos el apellido compuesto
         val partesApellido = persona.Apellido.split(" ")
         apellidoPaterno.value = partesApellido.getOrNull(0) ?: ""
         apellidoMaterno.value = partesApellido.getOrNull(1) ?: ""
@@ -170,13 +166,45 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
         regimenFiscal.value = persona.Regimen_Fiscal
     }
 
+    fun cargarPersonaMoralParaEditar(persona: PERSONAS_MORALES) {
+        esPersonaFisica.value = false
+        rfcEnEdicion.value = persona.RFC
+
+        rfcMoral.value = persona.RFC
+        denominacionSocial.value = persona.Denominacion_Social
+        fechaConstitucion.value = persona.Fecha_Constitucion
+        rfcRepresentante.value = persona.RFC_Representante
+        numEscritura.value = persona.Num_Escritura
+        regimenCapital.value = persona.Regimen_Capital
+        actividadEconomica.value = persona.Actividad_Economica
+    }
+
+    // Eliminación rápida
+    fun borrarPersona(curpParaBorrar: String) = queries.borrarPersonaFisica(curpParaBorrar)
+    fun borrarPersonaMoral(rfcParaBorrar: String) = queries.borrarPersonaMoral(rfcParaBorrar)
+
     fun limpiarFormulario() {
+        // Restauramos banderas de edición
         curpEnEdicion.value = null
+        rfcEnEdicion.value = null
+        esPersonaFisica.value = true
+
+        // Vaciamos físicas
         curp.value = ""
         nombre.value = ""
         apellidoPaterno.value = ""
         apellidoMaterno.value = ""
         fechaNacimiento.value = ""
+
+        // Vaciamos morales
+        rfcMoral.value = ""
+        denominacionSocial.value = ""
+        fechaConstitucion.value = ""
+        rfcRepresentante.value = ""
+        numEscritura.value = ""
+        regimenCapital.value = ""
+
+        // Vaciamos compartidos
         correo.value = ""
         telefono.value = ""
         codigoPostal.value = ""
@@ -186,12 +214,12 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
     }
 
     // ========================================================================
-    // FUNCIONES PRIVADAS (HELPER)
+    // 7. FUNCIONES PRIVADAS (HELPER)
     // ========================================================================
-    private fun inicializarDatosDePrueba() {
-        // Verificamos si la base de datos está vacía
-        if (queries.contarEstados().executeAsOne() == 0L) {
 
+    private fun inicializarDatosDePrueba() {
+        // Solo inyectamos los catálogos si es la primera vez que corre la app
+        if (queries.contarEstados().executeAsOne() == 0L) {
             // ==========================================
             // LOS 32 ESTADOS DE LA REPÚBLICA MEXICANA
             // ==========================================
@@ -231,7 +259,6 @@ class ContribuyenteViewModel(private val db: SatDatabase) : ViewModel() {
             // ==========================================
             // MUNICIPIOS REPRESENTATIVOS (Por Estado)
             // ==========================================
-
             // 11. GUANAJUATO
             queries.insertarMunicipio(1, 11, "Uriangato")
             queries.insertarMunicipio(2, 11, "Moroleón")
